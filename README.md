@@ -1,1 +1,1 @@
-page : https://xtremezero.xyz/ARportalNomow
+page : https://xtremezero.xyz/ARportal
