@@ -8,13 +8,75 @@
   <body>
     <a-scene mindar-image="imageTargetSrc: ./targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: true">
       <a-assets>
-        <a-asset-item id="logo" src="./logo.gltf"></a-asset-item>
+        <a-asset-item id="logo" src="./logo.glb"></a-asset-item>
       </a-assets>
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera id="camera" position="0 0 0" look-controls="enabled: false"></a-camera>
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-gltf-model rotation="0 0 0 " position="0 0 0.1" scale="0.5 0.5 0.5" src="#logo" animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
+        <a-gltf-model id="model" rotation="0 0 0 " position="0 0 0.1" scale="0.5 0.5 0.5" src="#logo" animation="property: position; to: 0 0.1 0.1; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate">
       </a-entity>
+
+      <!-- Interactive Boxes -->
+      <a-entity id="boxes" visible="false">
+        <a-box id="box1" position="-1 1 -2" color="red"></a-box>
+        <a-box id="box2" position="0 1 -2" color="green"></a-box>
+        <a-box id="box3" position="1 1 -2" color="blue"></a-box>
+      </a-entity>
+
     </a-scene>
+
+    <script>
+      const model = document.querySelector('#model');
+      const boxes = document.querySelector('#boxes');
+      const camera = document.querySelector('#camera');
+      let gazeTimeout;
+
+      function playAnimation(anim) {
+          model.setAttribute('animation-mixer', `clip: ${anim}`);
+      }
+
+      function showBoxes() {
+          boxes.setAttribute('visible', true);
+      }
+
+      function checkGaze() {
+          const cameraDir = new THREE.Vector3();
+          camera.object3D.getWorldDirection(cameraDir);
+          let lookingAtBox = null;
+
+          boxes.children.forEach(box => {
+              const boxPos = new THREE.Vector3();
+              box.object3D.getWorldPosition(boxPos);
+              const dirToBox = boxPos.sub(camera.object3D.position).normalize();
+              if (cameraDir.dot(dirToBox) > 0.99) {
+                  lookingAtBox = box;
+              }
+          });
+
+          if (lookingAtBox) {
+              if (!gazeTimeout) {
+                  gazeTimeout = setTimeout(() => {
+                      window.location.href = 'https://google.com';
+                  }, 3000);
+              }
+              playAnimation(lookingAtBox.id === 'box1' ? 'anim3' : lookingAtBox.id === 'box2' ? 'anim4' : 'anim5');
+          } else {
+              clearTimeout(gazeTimeout);
+              gazeTimeout = null;
+              playAnimation('anim2');
+          }
+      }
+
+      model.addEventListener('animation-finished', (event) => {
+          if (event.detail.clip === 'anim1') {
+              playAnimation('anim2');
+              setTimeout(showBoxes, 2000);
+          }
+      });
+
+      setInterval(checkGaze, 500);
+      playAnimation('anim1');
+  </script>
+
   </body>
 </html>
